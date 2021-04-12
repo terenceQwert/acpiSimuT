@@ -1,0 +1,92 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="DeviceCancelIrp.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="DeviceCapability.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="DeviceClose.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="DeviceIoControl.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="DeviceIoControl_Timer.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="DeviceQueryRelation.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="DeviceRead.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="DeviceRead_Timer.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="DeviceSpaceConfig.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="DeviceStartIO.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="DeviceTimerDPC.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="DirectIoMethod.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="DispatchRoutine.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="Enum.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="HelloWDM.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="HelloWDMSupport.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="DeviceStart.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="AcpiOpRegion.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Enum.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="Feature_Flag.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="AcpiSmiWdmCommon.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="AcpiSmiWdmIoControl.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="PciCommon.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="SimulateData.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header">
+      <UniqueIdentifier>{14c1165f-7472-49d0-98a5-8ed724b6d60e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources">
+      <UniqueIdentifier>{3fe0a728-3353-4363-91a5-d5ddcc8c940e}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Inf Include="AcpiSim.inx">
+      <Filter>Sources</Filter>
+    </Inf>
+  </ItemGroup>
+</Project>
