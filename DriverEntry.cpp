@@ -6,12 +6,14 @@ extern "C"
 #ifdef __cplusplus
 }
 #endif
-//#include "AcpiSmiWdmCommon.h"
+
 #include "AcpiSmiWdmCommon.h"
 #include "Enum.h"
 #include "Feature_Flag.h"
+#include "AcpiWmiCallback.h"
 
-extern "C" NTSTATUS DriverEntry(
+extern "C" 
+NTSTATUS DriverEntry(
   IN PDRIVER_OBJECT DriverObject,
   IN PUNICODE_STRING RegistryPath
 );
@@ -384,6 +386,23 @@ NTSTATUS WdmPnp(IN PDEVICE_OBJECT fdo, IN PIRP Irp)
   return status;
 }
 
+
+//
+// to generate this Wmi42Guid declaration, 
+// due to VS2017 cannot default binding wmimofck to generate properly header file, 
+// add following line: 
+/// <Wmimofck Include=".\$(IntDir)\wmi42.bmf">
+/// <HeaderOutputFile>.\$(IntDir)\wmi42.h</HeaderOutputFile>
+/// <VBScriptTestOutputFile>.\$(IntDir)\wmi42.vbs</VBScriptTestOutputFile>
+/// </Wmimofck>
+// detail, can refer to 'WDKSample\storage\msdsm\src'
+//
+
+GUID AcpiSimWMIGUID = Wmi42Guid;
+WMIGUIDREGINFO guidlist[] = {
+  {&AcpiSimWMIGUID, 1, WMIREG_FLAG_INSTANCE_PDO}
+};
+
 NTSTATUS
 Acpi_Wmi_Registration(
   IN PDEVICE_EXTENSION pDevExt
@@ -391,16 +410,16 @@ Acpi_Wmi_Registration(
 {
   NTSTATUS Status = STATUS_SUCCESS;
   PAGED_CODE();
-#if 0
-  pDevExt->WmiLibContext.GuidCount = 0;
-  pDevExt->WmiLibContext.GuidList = NULL;
+
+  pDevExt->WmiLibContext.GuidCount = arraysize(guidlist);
+  pDevExt->WmiLibContext.GuidList = guidlist;
   pDevExt->WmiLibContext.QueryWmiRegInfo = QueryRegInfo;
   pDevExt->WmiLibContext.QueryWmiDataBlock = QueryDataBlock;
   pDevExt->WmiLibContext.SetWmiDataBlock = NULL;
   pDevExt->WmiLibContext.SetWmiDataItem = NULL;
   pDevExt->WmiLibContext.ExecuteWmiMethod = NULL;
   pDevExt->WmiLibContext.WmiFunctionControl = NULL;
-#endif
+
   KdPrint(("Enter Acpi_Wmi_Registration\n"));
   ///
   /// Register with WMI

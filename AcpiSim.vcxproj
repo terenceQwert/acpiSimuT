@@ -236,9 +236,9 @@
       <HeaderOutputFile>.\$(IntDir)\wmi42.h</HeaderOutputFile>
       <VBScriptTestOutputFile>.\$(IntDir)\wmi42.vbs</VBScriptTestOutputFile>
     </Wmimofck>
-
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AcpiWmiCallback.h" />
     <ClInclude Include="Enum.h" />
     <ClInclude Include="Feature_Flag.h" />
     <ClInclude Include="AcpiSmiWdmCommon.h" />

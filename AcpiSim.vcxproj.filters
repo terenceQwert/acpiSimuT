@@ -55,6 +55,12 @@
     <ClCompile Include="Devicemisc.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="WmiSystemIoCode.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="WmiSupport.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Enum.h">
@@ -75,6 +81,10 @@
     <ClInclude Include="SimulateData.h">
       <Filter>Headers</Filter>
     </ClInclude>
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="AcpiWmiCallback.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Inf Include="AcpiSim.inx" />
@@ -86,5 +96,11 @@
     <Filter Include="Sources">
       <UniqueIdentifier>{b9631ab9-1567-40d1-939e-a569590472cc}</UniqueIdentifier>
     </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Mofcomp Include="wmi42.mof" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="AcpiSim.rc" />
   </ItemGroup>
 </Project>

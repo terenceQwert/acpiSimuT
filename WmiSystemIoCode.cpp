@@ -58,32 +58,7 @@ WMIMinorFunctionString(
   }
 }
 
-//
-// to generate this Wmi42Guid declaration, 
-// due to VS2017 cannot default binding wmimofck to generate properly header file, 
-// add following line: 
-/// <Wmimofck Include=".\$(IntDir)\wmi42.bmf">
-/// <HeaderOutputFile>.\$(IntDir)\wmi42.h</HeaderOutputFile>
-/// <VBScriptTestOutputFile>.\$(IntDir)\wmi42.vbs</VBScriptTestOutputFile>
-/// </Wmimofck>
-// detail, can refer to 'WDKSample\storage\msdsm\src'
-//
 
-GUID AcpiSimWMIGUID = Wmi42Guid;
-WMIGUIDREGINFO guidlist[] = {
-  {&AcpiSimWMIGUID, 1, WMIREG_FLAG_INSTANCE_PDO}
-};
-
-WMILIB_CONTEXT libinfo = {
-  arraysize(guidlist),
-  guidlist,
-  QueryRegInfo,
-  QueryDataBlock,
-  NULL,               // SetDataBlock
-  NULL,               // SetDataItem
-  NULL,               // Executemethod
-  NULL                // FunctionControl
-};
 
 NTSTATUS 
 SystemControl(
@@ -106,8 +81,8 @@ SystemControl(
   // MajorFunction: IRP_MJ_SYSTEM_CONTROL & MinorFunction between IRP_MN_QUERY_ALL_DATA ~ IRP_MN_EXECUTE_METHOD
   // for WMI
   //
-  status = WmiSystemControl(&libinfo, fdo, irp, &disposition);
   pDevExt = (PDEVICE_EXTENSION)fdo->DeviceExtension;
+  status = WmiSystemControl(&pDevExt->WmiLibContext, fdo, irp, &disposition);
   // it is ok, but, not trig WMI callback
   lower_device = pDevExt->NextStackDevice;
   // below cause BSOD

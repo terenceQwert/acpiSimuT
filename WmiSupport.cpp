@@ -83,12 +83,12 @@ QueryDataBlock(
 #define MAX_TRY_SIZE 10
   NTSTATUS  Status = STATUS_SUCCESS;
   KdPrint(("Enter QueryDataBlock \n"));
-  KdPrint(("output support size = %d, InstanceCount = %d, InstanceIndex = %d GuidIndex = %d\n", 
-    OutBufferSize, InstanceCount, InstanceIndex, Guidindex));
+  KdPrint(("output support size = %d, InstanceCount = %d, InstanceIndex = %d GuidIndex = %d\n", OutBufferSize, InstanceCount, InstanceIndex, Guidindex));
   PAGED_CODE();
+
   if (!instlength || OutBufferSize == 0)
-    return WmiCompleteRequest(fdo, irp, STATUS_BUFFER_TOO_SMALL,
-      sizeof(ULONG), IO_NO_INCREMENT);
+    return WmiCompleteRequest(fdo, irp, STATUS_BUFFER_TOO_SMALL, sizeof(ULONG), IO_NO_INCREMENT);
+
   PDEVICE_EXTENSION pDevExt = (PDEVICE_EXTENSION)fdo->DeviceExtension;
   PULONG pValue = (PULONG)Buffer;
 
