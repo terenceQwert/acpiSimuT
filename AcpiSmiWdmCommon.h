@@ -53,6 +53,7 @@ typedef struct _DEVICE_EXTENSION
 
   /// following section for WMI 
   WMILIB_CONTEXT    WmiLibContext;
+  ULONG             TheAnswer;
   ///
   /// this was created by Windows, and it was passed in AddDevice function
   ///
@@ -78,14 +79,6 @@ NTSTATUS StartDevice(PDEVICE_EXTENSION pdx, PIRP pIrp);
 NTSTATUS RemoveDevice(PDEVICE_EXTENSION pdx, PIRP Irp);
 NTSTATUS PnpQueryCapabilitiesHandler(IN PDEVICE_EXTENSION pdx, IN PIRP irp);
 NTSTATUS DeviceQueryDeviceRelation(PDEVICE_EXTENSION pdx, PIRP /* pIrp */);
-
-///
-/// WMI related
-///
-NTSTATUS
-Acpi_Wmi_Registration(
-  IN PDEVICE_EXTENSION pDevExt
-);
 
 NTSTATUS
 ACPI_Wmi_DeRegistration(

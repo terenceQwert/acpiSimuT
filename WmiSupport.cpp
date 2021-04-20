@@ -11,6 +11,25 @@ extern "C"
 }
 #endif
 
+#include "AcpiWmiCallback.h"
+#define MOFRESOURCENAME L"MofResourceName"
+//
+// to generate this Wmi42Guid declaration, 
+// due to VS2017 cannot default binding wmimofck to generate properly header file, 
+// add following line: 
+/// <Wmimofck Include=".\$(IntDir)\wmi42.bmf">
+/// <HeaderOutputFile>.\$(IntDir)\wmi42.h</HeaderOutputFile>
+/// <VBScriptTestOutputFile>.\$(IntDir)\wmi42.vbs</VBScriptTestOutputFile>
+/// </Wmimofck>
+// detail, can refer to 'WDKSample\storage\msdsm\src'
+//
+
+GUID AcpiSimWMIGUID = Wmi42Guid;
+WMIGUIDREGINFO guidlist[] = {
+  {&AcpiSimWMIGUID, 3, WMIREG_FLAG_INSTANCE_PDO}
+};
+
+
 extern UNICODE_STRING GlobalRegistryPath;
 
 NTSTATUS 
@@ -24,8 +43,6 @@ ACPI_Wmi_DeRegistration(
     WMIREG_ACTION_DEREGISTER);
 }
 
-#define MOFRESOURCENAME L"MofResourceName"
-
 
 void _CreateInstaName(OUT PUNICODE_STRING )
 {
@@ -38,6 +55,36 @@ void _CreateInstaName(OUT PUNICODE_STRING )
   RtlInitUnicodeString(InstanceName, L"AcpiSim");
   */
 }
+NTSTATUS
+Acpi_Wmi_Registration(
+  IN PDEVICE_EXTENSION pDevExt
+)
+{
+  NTSTATUS Status = STATUS_SUCCESS;
+  PAGED_CODE();
+
+  pDevExt->WmiLibContext.GuidCount = arraysize(guidlist);
+  pDevExt->WmiLibContext.GuidList = guidlist;
+  pDevExt->WmiLibContext.QueryWmiRegInfo = QueryRegInfo;
+  pDevExt->WmiLibContext.QueryWmiDataBlock = QueryDataBlock;
+  pDevExt->WmiLibContext.SetWmiDataBlock = SetDataBlock;
+  pDevExt->WmiLibContext.SetWmiDataItem = SetDataItem;
+  pDevExt->WmiLibContext.ExecuteWmiMethod = NULL;
+  pDevExt->WmiLibContext.WmiFunctionControl = NULL;
+  pDevExt->TheAnswer = 0;
+  KdPrint(("Enter Acpi_Wmi_Registration\n"));
+  ///
+  /// Register with WMI
+  ///
+  Status = IoWMIRegistrationControl(
+    pDevExt->fdo,
+    WMIREG_ACTION_REGISTER
+  );
+  KdPrint(("Leave Acpi_Wmi_Registration\n"));
+  return Status;
+}
+
+
 NTSTATUS
 QueryRegInfo(
   IN PDEVICE_OBJECT     DeviceObject,
@@ -95,7 +142,8 @@ QueryDataBlock(
   //
   // for WMI42 class, hard-code returns 'TheAnswer' is 0x02
   //
-  *pValue = 0x2;
+  //  *pValue = 0x2;
+  *pValue = pDevExt->TheAnswer;
   instlength[0] = sizeof(ULONG);
 
   Status = WmiCompleteRequest(
@@ -108,6 +156,55 @@ QueryDataBlock(
   return Status;
 }
 
+NTSTATUS
+SetDataBlock(
+  IN PDEVICE_OBJECT fdo,
+  IN PIRP irp,
+  IN ULONG guidIndex,
+  IN ULONG instIndex,
+  IN ULONG bufSize,
+  IN PUCHAR buffer
+)
+{
+  NTSTATUS status = STATUS_SUCCESS;
+  ULONG info = 0;
+  PDEVICE_EXTENSION pDevExt = (PDEVICE_EXTENSION)fdo->DeviceExtension;
+  if (bufSize == sizeof(ULONG))
+  {
+    pDevExt->TheAnswer = *(PULONG)buffer;
+    status = STATUS_SUCCESS;
+    info = sizeof(ULONG);
+  }
+  else
+  {
+    status = STATUS_INFO_LENGTH_MISMATCH, info = 0;
+  }
+  return WmiCompleteRequest(fdo, irp, status, info, IO_NO_INCREMENT);
+}
 
-
+NTSTATUS
+SetDataItem(
+  IN PDEVICE_OBJECT fdo,
+  IN PIRP           irp,
+  IN ULONG          guidIndex,
+  IN ULONG          instIndex,
+  IN ULONG          id,
+  IN ULONG          bufSize,
+  IN PUCHAR         buffer
+)
+{
+  PDEVICE_EXTENSION pDevExt = (PDEVICE_EXTENSION)fdo->DeviceExtension;
+  NTSTATUS  status;
+  ULONG info;
+  if (bufSize == sizeof(ULONG)) {
+    pDevExt->TheAnswer = *(PULONG)buffer;
+    status = STATUS_SUCCESS;
+    info = sizeof(ULONG);
+  }
+  else
+  {
+    status = STATUS_INFO_LENGTH_MISMATCH, info = 0;
+  }
+  return WmiCompleteRequest(fdo, irp, status, info, IO_NO_INCREMENT);
+}
 
