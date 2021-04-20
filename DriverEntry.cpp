@@ -13,7 +13,7 @@ extern "C"
 
 extern "C" NTSTATUS DriverEntry(
   IN PDRIVER_OBJECT DriverObject,
-  IN PUNICODE_STRING
+  IN PUNICODE_STRING RegistryPath
 );
 
 #ifdef ALLOC_PRAGMA
@@ -23,13 +23,17 @@ extern "C" NTSTATUS DriverEntry(
 #endif
 NTSTATUS AddDevice(IN PDRIVER_OBJECT DriverObject, IN PDEVICE_OBJECT PhysicalDeviceObject);
 NTSTATUS WdmPnp(IN PDEVICE_OBJECT fdo, IN PIRP pIrp);
-NTSTATUS Dispatch(IN PDEVICE_OBJECT fdo, IN PIRP pIrp);
+
+NTSTATUS WmiSysIoDispatch(IN PDEVICE_OBJECT fdo, IN PIRP pIrp);
+NTSTATUS SystemControl(IN PDEVICE_OBJECT fdo, IN PIRP pIrp);
+
 VOID DumpDeviceStack(IN PDEVICE_OBJECT pdo);
 VOID DisplayProcessName();
 VOID LinkListTest();
 VOID New_Test();
 void CreateFileFromWDM();
 
+UNICODE_STRING GlobalRegistryPath;
 
 void Unload(IN PDRIVER_OBJECT DriverObject);
 
@@ -37,11 +41,23 @@ void Unload(IN PDRIVER_OBJECT DriverObject);
 extern "C"
 NTSTATUS DriverEntry(
   IN PDRIVER_OBJECT DriverObject,
-  IN PUNICODE_STRING RegistryEntry
+  IN PUNICODE_STRING RegistryPath
 )
 {
-  KdPrint(("Enter HelloWDM DriverEntry\n"));
-  KdPrint(("Registry = %wZ\n", *RegistryEntry));
+  KdPrint(("Enter AcpiSim DriverEntry\n"));
+  KdPrint(("Obj (%0x8) Registry = \"%ws\"\n",DriverObject, RegistryPath->Buffer));
+  GlobalRegistryPath.MaximumLength = RegistryPath->Length + sizeof(UNICODE_NULL);
+  GlobalRegistryPath.Buffer = (PWCH)ExAllocatePoolWithTag(PagedPool, GlobalRegistryPath.MaximumLength, 'StaB');
+  if (!GlobalRegistryPath.Buffer)
+  {
+    KdPrint(("Couldn't allocate pool for registry path.\n"));
+    return STATUS_INSUFFICIENT_RESOURCES;
+  }
+  else
+  {
+    RtlCopyUnicodeString(&GlobalRegistryPath, RegistryPath);
+  }
+
   DriverObject->DriverExtension->AddDevice = AddDevice;
   DriverObject->DriverStartIo = StartIo;
   DriverObject->MajorFunction[IRP_MJ_PNP] = WdmPnp;
@@ -55,11 +71,11 @@ NTSTATUS DriverEntry(
   DriverObject->MajorFunction[IRP_MJ_WRITE] = Writer;
   DriverObject->MajorFunction[IRP_MJ_CLEANUP] = AcpiSmiWdmDispatchRoutine;
   DriverObject->MajorFunction[IRP_MJ_DEVICE_CONTROL] = HelloWDMDeviceIoControl;
-  DriverObject->MajorFunction[IRP_MJ_SET_INFORMATION] = Dispatch;
+  DriverObject->MajorFunction[IRP_MJ_SET_INFORMATION] = WmiSysIoDispatch;
   DriverObject->MajorFunction[IRP_MJ_SHUTDOWN] = AcpiSmiWdmDispatchRoutine;
-  DriverObject->MajorFunction[IRP_MJ_SYSTEM_CONTROL] = Dispatch;
+  DriverObject->MajorFunction[IRP_MJ_SYSTEM_CONTROL] = SystemControl;
   DriverObject->DriverUnload = Unload;
-  KdPrint(("Leave HelloWDM DriverEntry\n"));
+  KdPrint(("Leave AcpiSim DriverEntry\n"));
   return STATUS_SUCCESS;
 }
 
@@ -136,10 +152,8 @@ NTSTATUS AddDevice(
   UNICODE_STRING  devName;
   KdPrint(("PDO Devicetype = %x\n", PhysicalDeviceObject->DeviceType));
   KdPrint(("PhysicalDeviceObject = %x\n", PhysicalDeviceObject));
-  KdPrint(("AcpiSim: initialize unicode\n"));
 //  MyAttachDevice(DriverObject);
   RtlInitUnicodeString(&devName, MYWDM_NAME);
-  KdPrint(("AcpiSim: IoCreateDevice\n"));
   ntStatus = IoCreateDevice(
     DriverObject,
     sizeof(DEVICE_EXTENSION),
@@ -160,10 +174,18 @@ NTSTATUS AddDevice(
     return STATUS_SUCCESS;
 //    return ntStatus; 
   }
-  KdPrint(("AcpiSim: create name start\n"));
   PDEVICE_EXTENSION pdx = (PDEVICE_EXTENSION)fdo->DeviceExtension;
+
+  ///
+  /// store this function device object.
+  ///
   pdx->fdo = fdo;
   pdx->NextStackDevice = IoAttachDeviceToDeviceStack(fdo, PhysicalDeviceObject);
+
+  ///
+  /// saved it!
+  ///
+  pdx->PDO = PhysicalDeviceObject;
   KdPrint(("AcpiSim: lower device = %x\n", pdx->NextStackDevice));
   pdx->NextPeerDevice = DriverObject->DeviceObject->NextDevice;
   memset(pdx->buffer, 0, sizeof(pdx->buffer));
@@ -187,7 +209,6 @@ NTSTATUS AddDevice(
   }
 
 #if BUFFER_IO
-//  fdo->Flags |= DO_BUFFERED_IO | DO_POWER_PAGABLE;
   fdo->Flags |= DO_BUFFERED_IO | DO_POWER_PAGABLE;
 #else
   fdo->Flags |= DO_DIRECT_IO;
@@ -198,6 +219,18 @@ NTSTATUS AddDevice(
 #else
   KeInitializeTimer(&pdx->pollingTimer);
   KeInitializeDpc(&pdx->pollingDPC, PollingTimerDpc, (PVOID)fdo);
+#endif
+
+  ///
+  /// Register WMI related function
+  ///
+#if 1
+  ntStatus = Acpi_Wmi_Registration(pdx);
+  if (NT_ERROR(ntStatus))
+  {
+    KdPrint(("Register WMI fail with status code = 0x%x", ntStatus));
+  }
+  
 #endif
 //  Dump(DriverObject);
 //  DumpDeviceStack(PhysicalDeviceObject);
@@ -243,17 +276,7 @@ NTSTATUS RemoveDevice(PDEVICE_EXTENSION pdx, PIRP pIrp)
 }
 #endif
 
-#pragma
-NTSTATUS Dispatch(IN PDEVICE_OBJECT , IN PIRP irp)
-{
-  PAGED_CODE();
-  KdPrint(("Enter AcpiSmiWdmDispatchRoutine\n"));
-  irp->IoStatus.Status = STATUS_SUCCESS;
-  irp->IoStatus.Information = 0;  // no bytes transferred.
-  IoCompleteRequest(irp, IO_NO_INCREMENT);
-  KdPrint(("Leave AcpiSmiWdmDispatchRoutine\n"));
-  return STATUS_SUCCESS;
-}
+
 
 extern ULONG pendingkey;
 #pragma
@@ -271,6 +294,11 @@ void Unload(IN PDRIVER_OBJECT pDriverObject)
     pNextDevObj = pNextDevObj->NextDevice;
     IoDeleteDevice( pDevExt->fdo);
   }
+
+  ///
+  /// free buffer allocation
+  ///
+  ExFreePool(GlobalRegistryPath.Buffer);
   KdPrint(("Leave Unload\n"));
 }
 
@@ -356,4 +384,32 @@ NTSTATUS WdmPnp(IN PDEVICE_OBJECT fdo, IN PIRP Irp)
   return status;
 }
 
+NTSTATUS
+Acpi_Wmi_Registration(
+  IN PDEVICE_EXTENSION pDevExt
+)
+{
+  NTSTATUS Status = STATUS_SUCCESS;
+  PAGED_CODE();
+#if 0
+  pDevExt->WmiLibContext.GuidCount = 0;
+  pDevExt->WmiLibContext.GuidList = NULL;
+  pDevExt->WmiLibContext.QueryWmiRegInfo = QueryRegInfo;
+  pDevExt->WmiLibContext.QueryWmiDataBlock = QueryDataBlock;
+  pDevExt->WmiLibContext.SetWmiDataBlock = NULL;
+  pDevExt->WmiLibContext.SetWmiDataItem = NULL;
+  pDevExt->WmiLibContext.ExecuteWmiMethod = NULL;
+  pDevExt->WmiLibContext.WmiFunctionControl = NULL;
+#endif
+  KdPrint(("Enter Acpi_Wmi_Registration\n"));
+  ///
+  /// Register with WMI
+  ///
+  Status = IoWMIRegistrationControl(
+              pDevExt->fdo,
+              WMIREG_ACTION_REGISTER
+              );
+  KdPrint(("Leave Acpi_Wmi_Registration\n"));
+  return Status;
+}
 

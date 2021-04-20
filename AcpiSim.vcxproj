@@ -152,6 +152,10 @@
     <Link>
       <AdditionalDependencies>Oprghdlr.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Mofcomp>
+      <Amendment>
+      </Amendment>
+    </Mofcomp>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <ClCompile>
@@ -162,6 +166,10 @@
     <Link>
       <AdditionalDependencies>Oprghdlr.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Mofcomp>
+      <Amendment>
+      </Amendment>
+    </Mofcomp>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -172,6 +180,10 @@
     <Link>
       <AdditionalDependencies>Oprghdlr.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Mofcomp>
+      <Amendment>
+      </Amendment>
+    </Mofcomp>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -183,6 +195,10 @@
     <Link>
       <AdditionalDependencies>Oprghdlr.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Mofcomp>
+      <Amendment>
+      </Amendment>
+    </Mofcomp>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
     <ClCompile>
@@ -214,6 +230,13 @@
     <ClCompile Include="Enum.cpp" />
     <ClCompile Include="DriverEntry.cpp" />
     <ClCompile Include="Devicemisc.cpp" />
+    <ClCompile Include="WmiSupport.cpp" />
+    <ClCompile Include="WmiSystemIoCode.cpp" />
+    <Wmimofck Include=".\$(IntDir)\wmi42.bmf">
+      <HeaderOutputFile>.\$(IntDir)\wmi42.h</HeaderOutputFile>
+      <VBScriptTestOutputFile>.\$(IntDir)\wmi42.vbs</VBScriptTestOutputFile>
+    </Wmimofck>
+
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Enum.h" />
@@ -221,10 +244,17 @@
     <ClInclude Include="AcpiSmiWdmCommon.h" />
     <ClInclude Include="AcpiSmiWdmIoControl.h" />
     <ClInclude Include="PciCommon.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="SimulateData.h" />
   </ItemGroup>
   <ItemGroup>
     <Inf Include="AcpiSim.inx" />
+  </ItemGroup>
+  <ItemGroup>
+    <Mofcomp Include="wmi42.mof" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="AcpiSim.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

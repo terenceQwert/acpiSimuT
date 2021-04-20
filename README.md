@@ -1,2 +1,7 @@
-# acpiSimuT
-this driver is used to describe how to operate ACPI code and work with BIOS, it is working for any acpi-specific type driver, also. read/write OpRegion is feasible.
+# HelloWDM
+- when using WinDBG
+1. load symbol & source file, ex 
+File-->Syumbol File Path => srv*;F:\R5800.1\WP\prebuilt\7180\driver\desktop\QCDXDriver;C:\tmp\HelloWDM\ARM64\Debug
+File--> Source File Path => C:\tmp\HelloWDM
+2. bp HelloWDM!DriverEntry
+3. install driver from target Windows

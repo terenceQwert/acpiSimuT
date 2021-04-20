@@ -3,14 +3,15 @@ extern "C"
 {
 #endif
 #include <wdm.h>
+#include <oprghdlr.h>
+#include <acpiioct.h>
+#include <acpitabl.h>
 #ifdef __cplusplus
 }
 #endif
 #include "AcpiSmiWdmCommon.h"
 #include "Enum.h"
-#include <oprghdlr.h>
-#include <acpiioct.h>
-#include <acpitabl.h>
+
 // #include "PciCommon.h"
 /*
 ** these two APIs HalGetBusData & HalSetBusData are depricated.

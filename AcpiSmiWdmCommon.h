@@ -1,6 +1,21 @@
 #pragma once
 //#include <wdm.h>
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+#include <wdm.h>
+#include <acpitabl.h>
+#include <acpiioct.h>
+#include <wmilib.h>
+#include <wmilib.h>
+#include <wmiguid.h>
+#include <wmistr.h>
 #include "AcpiSmiWdmIoControl.h"
+#include "wmi42.h"
+#ifdef __cplusplus
+}
+#endif
 
 
 #define PAGEDCODE code_seg("PAGE")
@@ -34,8 +49,14 @@ typedef struct _DEVICE_EXTENSION
   KTIMER         pollingTimer;
   KDPC           pollingDPC;
   HANDLE          hDevice;
+  PDEVICE_OBJECT    pAcpiDevice;
 
-  PDEVICE_OBJECT  pAcpiDevice;
+  /// following section for WMI 
+  WMILIB_CONTEXT    WmiLibContext;
+  ///
+  /// this was created by Windows, and it was passed in AddDevice function
+  ///
+  PDEVICE_OBJECT    PDO;               
 } DEVICE_EXTENSION, *PDEVICE_EXTENSION;
 
 #define arraysize(p)  (sizeof(p)/sizeof((p)[0]))
@@ -58,6 +79,18 @@ NTSTATUS RemoveDevice(PDEVICE_EXTENSION pdx, PIRP Irp);
 NTSTATUS PnpQueryCapabilitiesHandler(IN PDEVICE_EXTENSION pdx, IN PIRP irp);
 NTSTATUS DeviceQueryDeviceRelation(PDEVICE_EXTENSION pdx, PIRP /* pIrp */);
 
+///
+/// WMI related
+///
+NTSTATUS
+Acpi_Wmi_Registration(
+  IN PDEVICE_EXTENSION pDevExt
+);
+
+NTSTATUS
+ACPI_Wmi_DeRegistration(
+  IN PDEVICE_EXTENSION pDevExt
+);
 ///
 /// other testing function
 ///
@@ -101,13 +134,38 @@ VOID ShowResources(IN PCM_PARTIAL_RESOURCE_LIST list);
 // Direct I/O method
 NTSTATUS HelloWDMDirectIoRead(IN PDEVICE_OBJECT, IN PIRP);
 
-///
-///
-///
+
+
+
+//
+// WMI block
+//
 
 VOID
 AcpiInstallOpRegionHandler(
   IN PDEVICE_OBJECT pDevObj
 );
 
+NTSTATUS
+QueryRegInfo(
+  IN PDEVICE_OBJECT     DeviceObject,
+  OUT ULONG             *RegFlags,
+  OUT PUNICODE_STRING   Instancename,
+  OUT PUNICODE_STRING   *RegistryPath,
+  OUT PUNICODE_STRING   MofResoureName,
+  OUT PDEVICE_OBJECT    *Pdo
+);
+
+
+NTSTATUS
+QueryDataBlock(
+  IN PDEVICE_OBJECT       DeviceObject,
+  IN PIRP                 pIrp,
+  IN ULONG                Guidindex,
+  IN ULONG                InstanceIndex,
+  IN ULONG                InstanceCount,
+  IN OUT PULONG           InstanceLengthArray,
+  IN ULONG                OutBufferSize,
+  OUT PUCHAR              Buffer
+);
 
