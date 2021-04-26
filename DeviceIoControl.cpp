@@ -48,6 +48,10 @@ VOID EnumeratePCI()
 #define CM_PRS_NAME (ULONG)('SRP_')
 #define CM_DIS_NAME (ULONG)('SID_')
 
+#define CM_TST1_NAME (ULONG)('1TST')
+#define CM_TST2_NAME (ULONG)('2TST')
+#define CM_TST3_NAME (ULONG)('3TST')
+
 #define MY_TAG 'gTyM' // Poll tag for memory allocation
 NTSTATUS
 SendDownStreamIrp(
@@ -124,6 +128,18 @@ AcpiEvaluate( PDEVICE_OBJECT pDevObj, int opCode)
     KdPrint(("_PSR run\n"));
     inputBuffer.MethodNameAsUlong = CM_PSR_NAME;
     break;
+  case 1:
+    KdPrint(("TST1 run\n"));
+    inputBuffer.MethodNameAsUlong = CM_TST1_NAME;
+    break;
+  case 2:
+    KdPrint(("TST2 run\n"));
+    inputBuffer.MethodNameAsUlong = CM_TST2_NAME;
+    break;
+  case 3:
+    KdPrint(("TST3 run\n"));
+    inputBuffer.MethodNameAsUlong = CM_TST3_NAME;
+    break;
   case 0x21:
     KdPrint(("_PRS run\n"));
     inputBuffer.MethodNameAsUlong = CM_PRS_NAME;
@@ -199,7 +215,7 @@ AcpiEvaluate( PDEVICE_OBJECT pDevObj, int opCode)
   if (outputBuffer.Signature != ACPI_EVAL_OUTPUT_BUFFER_SIGNATURE)
   {
     KdPrint(("cannot find outputbuffer's signature\n"));
-  }
+  } 
 
   //
   // We are expecting an integer
@@ -210,8 +226,12 @@ AcpiEvaluate( PDEVICE_OBJECT pDevObj, int opCode)
     KdPrint(("ACPI evaluatte fail check point 2 \n"));
     return;
   }
+  else
+  {
+    KdPrint(("Return data type = %d\n", argument->Type));
+  }
   KdPrint(("argument->Type = %d\n", argument->Type));
-  KdPrint(("value = %d\n", argument->Argument));
+  KdPrint(("value = 0x%x\n", argument->Argument));
   KdPrint(("AcpiEvaluate -End \n"));
 
 }

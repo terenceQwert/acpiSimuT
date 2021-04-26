@@ -47,3 +47,25 @@ SetDataItem(
   IN PUCHAR         buffer
 );
 
+
+NTSTATUS 
+FunctionControl(
+  PDEVICE_OBJECT fdo, 
+  PIRP irp,
+  ULONG guidindex, 
+  WMIENABLEDISABLECONTROL fcn, 
+  BOOLEAN enable
+);
+
+NTSTATUS
+ExecuteMehtod(
+  IN PDEVICE_OBJECT fdo,
+  IN PIRP           irp,
+  IN ULONG          guidIndex,
+  IN ULONG          instIndex,
+  IN ULONG          id,
+  IN ULONG          cbInbuf,
+  OUT ULONG         cbOutbuf,
+  IN OUT PUCHAR         buffer
+);
+

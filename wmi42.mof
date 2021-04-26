@@ -11,8 +11,28 @@ class Wmi42
 
     [read] boolean Active;
 
-    [WmiDataId(1),
-     Description("The Answer to the Ultimate Question")
-     ]
+    [WmiDataId(1), Description("The Answer to the Ultimate Question")]
     uint32 TheAnswer;
+	[Implemented, WmiMethodId(2)] 
+	void AnswerMethod([in,out] uint32 TheAnswer);
+
 };
+
+
+[Dynamic, Provider("WMIProv"),
+ WMI, 
+ Description("Event Info from WMIExtra"),
+ guid("c4b678f6-b6e9-11d2-bb87-00c04fa330a6"),
+ locale("MS\\0x409")]
+
+class wmiextra_event : WMIEvent
+{
+    [key, read] 
+     string InstanceName;
+
+    [read] boolean Active;
+
+    [WmiDataId(1), read] uint32 EventInfo;
+
+};
+

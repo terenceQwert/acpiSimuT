@@ -25,8 +25,10 @@ extern "C"
 //
 
 GUID AcpiSimWMIGUID = Wmi42Guid;
+//GUID AcpiSimEventGuid = wmiextra_eventGuid;
 WMIGUIDREGINFO guidlist[] = {
-  {&AcpiSimWMIGUID, 3, WMIREG_FLAG_INSTANCE_PDO}
+  {&AcpiSimWMIGUID, 1, WMIREG_FLAG_INSTANCE_PDO},
+//{&AcpiSimEventGuid,1, WMIREG_FLAG_INSTANCE_PDO| WMIREG_FLAG_EVENT_ONLY_GUID}
 };
 
 
@@ -69,7 +71,7 @@ Acpi_Wmi_Registration(
   pDevExt->WmiLibContext.QueryWmiDataBlock = QueryDataBlock;
   pDevExt->WmiLibContext.SetWmiDataBlock = SetDataBlock;
   pDevExt->WmiLibContext.SetWmiDataItem = SetDataItem;
-  pDevExt->WmiLibContext.ExecuteWmiMethod = NULL;
+  pDevExt->WmiLibContext.ExecuteWmiMethod = ExecuteMehtod;
   pDevExt->WmiLibContext.WmiFunctionControl = NULL;
   pDevExt->TheAnswer = 0;
   KdPrint(("Enter Acpi_Wmi_Registration\n"));
@@ -160,8 +162,8 @@ NTSTATUS
 SetDataBlock(
   IN PDEVICE_OBJECT fdo,
   IN PIRP irp,
-  IN ULONG guidIndex,
-  IN ULONG instIndex,
+  IN ULONG /* guidIndex */,
+  IN ULONG /* instIndex */,
   IN ULONG bufSize,
   IN PUCHAR buffer
 )
@@ -186,9 +188,9 @@ NTSTATUS
 SetDataItem(
   IN PDEVICE_OBJECT fdo,
   IN PIRP           irp,
-  IN ULONG          guidIndex,
-  IN ULONG          instIndex,
-  IN ULONG          id,
+  IN ULONG          /* guidIndex */,
+  IN ULONG          /* instIndex */,
+  IN ULONG          /* id */,
   IN ULONG          bufSize,
   IN PUCHAR         buffer
 )
@@ -208,3 +210,49 @@ SetDataItem(
   return WmiCompleteRequest(fdo, irp, status, info, IO_NO_INCREMENT);
 }
 
+NTSTATUS
+FunctionControl(
+  PDEVICE_OBJECT fdo,
+  PIRP irp,
+  ULONG /* guidindex */,
+  WMIENABLEDISABLECONTROL /* fcn */,
+  BOOLEAN /* enable */
+) 
+{
+  return WmiCompleteRequest(fdo, irp, STATUS_SUCCESS,0,IO_NO_INCREMENT);
+}
+
+NTSTATUS
+ExecuteMehtod(
+  IN PDEVICE_OBJECT fdo,
+  IN PIRP           irp,
+  IN ULONG          guidIndex,
+  IN ULONG          /* instIndex */,
+  IN ULONG          /* id */,
+  IN ULONG          /* cbInbuf */,
+  OUT ULONG         /* cbOutbuf */,
+  IN OUT PUCHAR         buffer
+)
+{
+  NTSTATUS status = STATUS_SUCCESS;
+  ULONG bufUsed = 0;
+  KdPrint(("Enter ExecuteMehtod with guidIndex =%d\n", guidIndex));
+  switch (guidIndex)
+  {
+  case 0:
+    bufUsed = sizeof(ULONG);
+    //
+    // execute this method!
+    //
+    (*(PULONG)buffer)++;
+    break;
+  default:
+    //
+    // other not support index, reutrn GUID_NOT_FOUND error message.
+    //
+    status = STATUS_WMI_GUID_NOT_FOUND;
+    break;
+  }
+  KdPrint(("Leave ExecuteMehtod\n"));
+  return WmiCompleteRequest(fdo, irp, status, bufUsed, IO_NO_INCREMENT);
+}
