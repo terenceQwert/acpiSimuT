@@ -1,12 +1,13 @@
 #ifdef __cplusplus
 extern "C"
 {
-#endif
+#pragma warning(disable:4214) /* nonstandard extension used: bit field types other then int */
+#pragma warning(disable:4201) /* nonstandard extension used: nameless struct/union */
+
 #include <wdm.h>
 #include <oprghdlr.h>
 #include <acpiioct.h>
 #include <acpitabl.h>
-#ifdef __cplusplus
 }
 #endif
 #include "AcpiSmiWdmCommon.h"
@@ -52,6 +53,10 @@ VOID EnumeratePCI()
 #define CM_TST2_NAME (ULONG)('2TST')
 #define CM_TST3_NAME (ULONG)('3TST')
 
+//
+// This method accepts one argument , either integer or buffer?
+//
+#define CM_TST4_NAM (ULONG)('4TST')
 #define MY_TAG 'gTyM' // Poll tag for memory allocation
 NTSTATUS
 SendDownStreamIrp(
@@ -104,10 +109,123 @@ SendDownStreamIrp(
   return status;
 }
 
+VOID
+WrapDataPacket(
+  ACPI_EVAL_INPUT_BUFFER_COMPLEX * pComplex
+)
+{
+  if (pComplex != NULL)
+  {
+    pComplex->ArgumentCount = 1;  // assume accept one 
+    pComplex->Size = pComplex->ArgumentCount * sizeof(ACPI_METHOD_ARGUMENT);
+    pComplex->Argument[0].Type = ACPI_METHOD_ARGUMENT_BUFFER;
+    pComplex->Argument[0].DataLength = 0x10;
+    //
+    // make a simple data list 01234..
+    //
+    unsigned char _internalBuffer[0x10] = { 0x30,0x31,0x32,0x33,0x34, };
+    memcpy_s(pComplex->Argument[0].Data, pComplex->Argument[0].DataLength, _internalBuffer, pComplex->Argument[0].DataLength);
+  }
+}
+
+VOID 
+PepReturnAcpiData(
+  IN  PVOID Value,
+  IN USHORT ValueType,
+  IN ULONG ValueLength,
+  IN BOOLEAN ReturnAsPackage,
+  OUT PACPI_METHOD_ARGUMENT Arguments,
+  IN OUT PSIZE_T OutputArgumentSize,
+  OUT PULONG OutputArgumentCount,
+  OUT OPTIONAL PNTSTATUS Status,
+  IN OPTIONAL PCHAR MethodName,
+  IN OPTIONAL PCHAR DebugInfo
+)
+{
+  PACPI_METHOD_ARGUMENT ArgumentLocal;
+  ULONG RequiredSize;
+  PULONG ValueAsInteger;
+  PUCHAR ValueAsString;
+
+  RequiredSize = ACPI_METHOD_ARGUMENT_LENGTH(ValueLength);
+  if (ReturnAsPackage != NULL)
+  {
+    ArgumentLocal = (PACPI_METHOD_ARGUMENT)&Arguments->Data[0];
+  } 
+  else
+  {
+    ArgumentLocal = Arguments;
+  }
+  if ((*OutputArgumentSize) < RequiredSize)
+  {
+    *OutputArgumentSize = RequiredSize;
+    *Status = STATUS_BUFFER_TOO_SMALL;
+    if (NULL != OutputArgumentCount)
+      *OutputArgumentCount = 0;
+  }
+  else {
+    //
+    // Set the retured value base on the type.
+    //
+    switch (ValueType)
+    {
+    case ACPI_METHOD_ARGUMENT_INTEGER:
+      ValueAsInteger = (PULONG)Value;
+      ACPI_METHOD_SET_ARGUMENT_INTEGER(ArgumentLocal, (*ValueAsInteger));
+      break;
+    case ACPI_METHOD_ARGUMENT_STRING:
+      ValueAsString = (PUCHAR)Value;
+      //
+      // N.B. ACPI_METHOD_SET_ARGUMENT_STRING will copy the string as
+      //      well.
+      //      ACPI_METHOD_SET_ARGUMENT_STRING currently has a bug:
+      //      error C4267: '=' : conversion from 'size_t' to 'USHORT',
+      //      possible loss of data.
+      //
+      //      error C4057: char * is different from PUCHAR.
+      //
+#pragma warning(suppress:4267 4057 4244)
+      ACPI_METHOD_SET_ARGUMENT_STRING(ArgumentLocal, ValueAsString);
+      break;
+    case ACPI_METHOD_ARGUMENT_BUFFER:
+      ValueAsString = (PUCHAR)Value;
+      ACPI_METHOD_SET_ARGUMENT_BUFFER(ArgumentLocal, ValueAsInteger, (USHORT)ValueLength);
+      break;
+    default:
+      NT_ASSERT(FALSE);
+      break;
+    }
+    if (FALSE != ReturnAsPackage)
+    {
+      Arguments->Type = ACPI_METHOD_ARGUMENT_PACKAGE_EX;
+      Arguments->DataLength =
+        ACPI_METHOD_ARGUMENT_LENGTH_FROM_ARGUMENT(ArgumentLocal);
+    }
+
+    //
+    // Return the otuput argument count, size and status
+    //
+
+    if (NULL != OutputArgumentCount)
+    {
+      *OutputArgumentCount = 1;
+    }
+
+    *OutputArgumentSize =
+      ACPI_METHOD_ARGUMENT_LENGTH_FROM_ARGUMENT(Arguments);
+    *Status = STATUS_SUCCESS;
+  }
+  return;
+}
+
 VOID 
 AcpiEvaluate( PDEVICE_OBJECT pDevObj, int opCode)
 {
   ACPI_EVAL_INPUT_BUFFER inputBuffer;
+  //
+  // buffered input
+  //
+  ACPI_EVAL_INPUT_BUFFER_COMPLEX complex = { 0 };
   ACPI_EVAL_OUTPUT_BUFFER outputBuffer;
   
 //  IO_STATUS_BLOCK         ioStatus;
@@ -148,6 +266,8 @@ AcpiEvaluate( PDEVICE_OBJECT pDevObj, int opCode)
     KdPrint(("_DIS run\n"));
     inputBuffer.MethodNameAsUlong = CM_DIS_NAME;
     break;
+  case 0x101:
+    WrapDataPacket(&complex);
   default:
     KdPrint(("_STA run\n"));
     inputBuffer.MethodNameAsUlong = CM_STA_NAME;
@@ -159,51 +279,29 @@ AcpiEvaluate( PDEVICE_OBJECT pDevObj, int opCode)
   // Intilaize the outputbuffer
   //
   RtlZeroMemory(&outputBuffer, sizeof(ACPI_EVAL_OUTPUT_BUFFER));
-
-#if 1
-  SendDownStreamIrp(pDevExt->NextStackDevice,
-    IOCTL_ACPI_EVAL_METHOD,
-    &inputBuffer,
-    sizeof(ACPI_EVAL_INPUT_BUFFER),
-    &outputBuffer,
-    sizeof(ACPI_EVAL_OUTPUT_BUFFER)
-  );
-#else
-  //
-  // Initialize an IRP
-  //
-  irp = IoBuildDeviceIoControlRequest(
-    IOCTL_ACPI_EVAL_METHOD,
-    pDevExt->NextStackDevice,
-    &inputBuffer,
-    sizeof(ACPI_EVAL_INPUT_BUFFER),
-    &outputBuffer,
-    sizeof(ACPI_EVAL_OUTPUT_BUFFER),
-    FALSE,
-    NULL,
-    &ioStatus
-  );
-
-  //
-  // irp initialize failed?
-  //
-  if (!irp)
+  
+  if (opCode > 0x100)
   {
-    status = STATUS_INSUFFICIENT_RESOURCES;
-    return;
+    SendDownStreamIrp(pDevExt->NextStackDevice,
+      IOCTL_ACPI_EVAL_METHOD,
+      &complex,
+      sizeof(ACPI_EVAL_INPUT_BUFFER_COMPLEX),
+      &outputBuffer,
+      sizeof(ACPI_EVAL_OUTPUT_BUFFER)
+    );
+
+  }
+  else
+  {
+    SendDownStreamIrp(pDevExt->NextStackDevice,
+      IOCTL_ACPI_EVAL_METHOD,
+      &inputBuffer,
+      sizeof(ACPI_EVAL_INPUT_BUFFER),
+      &outputBuffer,
+      sizeof(ACPI_EVAL_OUTPUT_BUFFER)
+    );
   }
 
-  //
-  // Send to ACPI driver
-  //
-  status = IoCallDriver(pDevExt->NextStackDevice, irp);
-  if (!NT_SUCCESS(status))
-  {
-    status = STATUS_UNSUCCESSFUL;
-    KdPrint(("ACPI evaluatte fail check point 1 \n"));
-    return;
-  }
-#endif  // 
   //
   // Crack the result
   // 
