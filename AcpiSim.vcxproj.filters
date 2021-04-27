@@ -13,9 +13,6 @@
     <ClCompile Include="DeviceClose.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
-    <ClCompile Include="DeviceIoControl.cpp">
-      <Filter>Sources</Filter>
-    </ClCompile>
     <ClCompile Include="DeviceIoControl_Timer.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
@@ -59,6 +56,9 @@
       <Filter>Sources</Filter>
     </ClCompile>
     <ClCompile Include="WmiSupport.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="DeviceIoControl.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
   </ItemGroup>

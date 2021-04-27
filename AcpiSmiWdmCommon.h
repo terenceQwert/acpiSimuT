@@ -1,10 +1,22 @@
 #pragma once
-//#include <wdm.h>
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif
-#include <wdm.h>
+#pragma warning(disable:4091)
+#pragma warning(disable:4214) /* nonstandard extension used: bit field types other then int */
+#pragma warning(disable:4201) /* nonstandard extension used: nameless struct/union */
+
+#pragma warning (push) 
+#pragma warning(disable:4091)
+#include <ntddk.h>
+#pragma warning (pop)
+#pragma warning(disable:4201)  // disable nameless struct/union warnings
+#include <wdf.h>
+#pragma warning(default:4201)
+#define NTSTRSAFE_LIB
+#include <ntstrsafe.h>
 #include <acpitabl.h>
 #include <acpiioct.h>
 #include <wmilib.h>

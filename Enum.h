@@ -22,6 +22,8 @@ typedef struct _OBJECT_CREATE_INFORMATION
   PSECURITY_QUALITY_OF_SERVICE SecurityQos;
   SECURITY_QUALITY_OF_SERVICE SecurityQualityOfService;
 } OBJECT_CREATE_INFORMATION, *POBJECT_CREATE_INFORMATION;
+
+#ifdef __cplusplus
 typedef struct _OBJECT_HEADER
 {
   LONG PointerCount;
@@ -43,6 +45,8 @@ typedef struct _OBJECT_HEADER
   PVOID SecurityDescriptor;
   QUAD Body;
 } OBJECT_HEADER, *POBJECT_HEADER;
+#endif
+
 typedef struct _OBJECT_DIRECTORY
 {
   struct _OBJECT_DIRECTORY_ENTRY* HashBuckets[NUMBER_HASH_BUCKETS];
@@ -63,7 +67,7 @@ typedef struct _OBJECT_HEADER_NAME_INFO
 } OBJECT_HEADER_NAME_INFO, *POBJECT_HEADER_NAME_INFO;
 
 
-
+#ifdef __cplusplus
 extern "C"
 {
   NTKERNELAPI
@@ -87,6 +91,7 @@ extern "C"
   extern POBJECT_TYPE IoDeviceObjectType;
   extern POBJECT_TYPE *IoDriverObjectType;
 }
+#endif  
 
 PDRIVER_OBJECT
 EnumDeviceStack(PWSTR pwsDeviceName);

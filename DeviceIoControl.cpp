@@ -1,18 +1,21 @@
-#ifdef __cplusplus
-extern "C"
-{
-#pragma warning(disable:4214) /* nonstandard extension used: bit field types other then int */
-#pragma warning(disable:4201) /* nonstandard extension used: nameless struct/union */
 
-#include <wdm.h>
-#include <oprghdlr.h>
-#include <acpiioct.h>
-#include <acpitabl.h>
-}
-#endif
+
 #include "AcpiSmiWdmCommon.h"
 #include "Enum.h"
+#if defined(EVENT_TRACING)
 
+#include <wpprecorder.h>
+
+#else
+
+//
+// Mock version of the handle type used everywhere.
+// We set all instances of this type to NULL.
+//
+
+typedef PVOID RECORDER_LOG;
+
+#endif
 // #include "PciCommon.h"
 /*
 ** these two APIs HalGetBusData & HalSetBusData are depricated.
@@ -148,7 +151,7 @@ PepReturnAcpiData(
   PUCHAR ValueAsString;
 
   RequiredSize = ACPI_METHOD_ARGUMENT_LENGTH(ValueLength);
-  if (ReturnAsPackage != NULL)
+  if (ReturnAsPackage != FALSE)
   {
     ArgumentLocal = (PACPI_METHOD_ARGUMENT)&Arguments->Data[0];
   } 
@@ -184,12 +187,21 @@ PepReturnAcpiData(
       //
       //      error C4057: char * is different from PUCHAR.
       //
-#pragma warning(suppress:4267 4057 4244)
+      #pragma warning(suppress:4267 4057 4244)
+#if 1
+      ArgumentLocal->Type = ACPI_METHOD_ARGUMENT_STRING;
+      ArgumentLocal->DataLength = (USHORT)( strlen((const char*)ValueAsString) + sizeof(UCHAR));
+      memcpy_s(&ArgumentLocal->Data[0], ArgumentLocal->DataLength, ValueAsString, ArgumentLocal->DataLength);
+#else
+      //
+      // ONLY support .c extension file.
+      //
       ACPI_METHOD_SET_ARGUMENT_STRING(ArgumentLocal, ValueAsString);
+#endif
       break;
     case ACPI_METHOD_ARGUMENT_BUFFER:
       ValueAsString = (PUCHAR)Value;
-      ACPI_METHOD_SET_ARGUMENT_BUFFER(ArgumentLocal, ValueAsInteger, (USHORT)ValueLength);
+      ACPI_METHOD_SET_ARGUMENT_BUFFER(ArgumentLocal, ValueAsString, (USHORT)ValueLength);
       break;
     default:
       NT_ASSERT(FALSE);
@@ -198,8 +210,7 @@ PepReturnAcpiData(
     if (FALSE != ReturnAsPackage)
     {
       Arguments->Type = ACPI_METHOD_ARGUMENT_PACKAGE_EX;
-      Arguments->DataLength =
-        ACPI_METHOD_ARGUMENT_LENGTH_FROM_ARGUMENT(ArgumentLocal);
+      Arguments->DataLength = ACPI_METHOD_ARGUMENT_LENGTH_FROM_ARGUMENT(ArgumentLocal);
     }
 
     //
@@ -211,8 +222,7 @@ PepReturnAcpiData(
       *OutputArgumentCount = 1;
     }
 
-    *OutputArgumentSize =
-      ACPI_METHOD_ARGUMENT_LENGTH_FROM_ARGUMENT(Arguments);
+    *OutputArgumentSize = ACPI_METHOD_ARGUMENT_LENGTH_FROM_ARGUMENT(Arguments);
     *Status = STATUS_SUCCESS;
   }
   return;
